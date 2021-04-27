@@ -101,6 +101,26 @@
   (... (missile-x m) (missile-y m)))
 
 
+;; Functions:
+
+;; Design the world function
+
+;; Tank -> Tank
+;; Produce a Tank with incremented or decremented position x based on dir Interval[-1,1]
+;; Assume: Tank dir remains the same.
+(check-expect (advance-tank (make-tank 0  0))  (make-tank 0  0))
+(check-expect (advance-tank (make-tank 1  1))  (make-tank 2  1))
+(check-expect (advance-tank (make-tank 2 -1))  (make-tank 1 -1))
+
+; (define (advance-tank t) (make-tank 0 0)) ; stub
+
+;; took template from Tank
+
+(define (advance-tank t)
+  (cond [(= (tank-dir t)  1) (make-tank (+ (tank-x t) 1) (tank-dir t))]
+        [(= (tank-dir t) -1) (make-tank (- (tank-x t) 1) (tank-dir t))]
+        [else (make-tank 0 0)]))
+
 
 (define G0 (make-game empty empty T0))
 (define G1 (make-game empty empty T1))
