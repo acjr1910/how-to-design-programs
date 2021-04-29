@@ -43,6 +43,7 @@
 
 ;; Data Definitions:
 
+;; Game
 (define-struct game (invaders missiles tank))
 ;; Game is (make-game  (listof Invader) (listof Missile) Tank)
 ;; interp. the current state of a space invaders game
@@ -53,11 +54,11 @@
 #;
 (define (fn-for-game s)
   (... (fn-for-loinvader (game-invaders s))
-       (fn-for-lom (game-missiles s))
-       (fn-for-tank (game-tank s))))
+       (fn-for-lom       (game-missiles s))
+       (fn-for-tank      (game-tank     s))))
 
 
-
+;; Tank
 (define-struct tank (x dir))
 ;; Tank is (make-tank Number Integer[-1, 1])
 ;; interp. the tank location is x, HEIGHT - TANK-HEIGHT/2 in screen coordinates
@@ -72,7 +73,7 @@
   (... (tank-x t) (tank-dir t)))
 
 
-
+;; Invader
 (define-struct invader (x y dx))
 ;; Invader is (make-invader Number Number Number)
 ;; interp. the invader is at (x, y) in screen coordinates
@@ -81,13 +82,38 @@
 (define I1 (make-invader 150 100 12))           ;not landed, moving right
 (define I2 (make-invader 150 HEIGHT -10))       ;exactly landed, moving left
 (define I3 (make-invader 150 (+ HEIGHT 10) 10)) ;> landed, moving right
-
+(define I4 (make-invader 150 100 -12))          ;not landed, moving left
 
 #;
 (define (fn-for-invader invader)
   (... (invader-x invader) (invader-y invader) (invader-dx invader)))
 
 
+;; Invaders
+(define-struct invaders (x y dx))
+;; Invaders is one of:
+;;  - empty
+;;  - (cons (make-invader Natural Natural Natural) Invaders)
+;; interp. a list of invaders, where each 
+;;           x   is the invader position x in pixels 
+;;           y   is the invader position y in pixels
+;;           dx  is the invader along x by dx pixels per clock tick
+
+(define LOI1 empty)
+(define LOI2 (list I1 empty))
+(define LOI3 (list I1 I4 empty))
+(define LOI4 (list I1 I2 I3 empty))
+
+#;
+(define (fn-for-invaders invaders)
+  (cond [(empty? invaders) (...)]
+        [else
+         (... (invaders-x  (first invaders)) ;Natural
+              (invaders-y  (first invaders)) ;Natural
+              (invaders-dx (first invaders)) ;Natural
+              (fn-for-invaders (rest invaders)))]))
+
+;; Missile
 (define-struct missile (x y))
 ;; Missile is (make-missile Number Number)
 ;; interp. the missile's location is x y in screen coordinates
@@ -100,10 +126,66 @@
 (define (fn-for-missile m)
   (... (missile-x m) (missile-y m)))
 
+;; Missiles
+(define-struct missiles (x y))
+;; Missiles is one of:
+;;  - empty
+;;  - (cons (make-missile Natural Natural) Missiles)
+;; interp. a list of missiles, where each 
+;;           x is the missile position x in pixels 
+;;           y is the missile position y in pixels
+
+;; !!! add missiles definition examples
+
+#;
+(define (fn-for-missiles missiles)
+  (cond [(empty? missiles) (...)]
+        [else
+         (... (missiles-x  (first missiles)) ;Natural
+              (missiles-y  (first missiles)) ;Natural
+              (fn-for-missiles (rest missiles)))]))
 
 ;; Functions:
 
-;; Design the world function
+;; Game -> Game
+;; Called to start the space invaders game; start with (main (make-game LOI LOM 0))
+;; no tests for main function
+(define (main game)
+  (big-bang game
+    (on-tick advance-game) ; Game          -> Game
+    (to-draw render-game)  ; Game          -> Image
+    (on-key  handle-key))) ; Game KeyEvent -> Game
+
+;; Game -> Game
+;; !!!
+;(define (advance-game s) 0) ; stub
+
+(define (advance-game s)
+  (if (game-over? (game-invaders s))
+      s
+      (make-game
+       (advance-invaders (game-invaders s))
+       (advance-missiles (game-missiles s))
+       (advance-tank     (game-tank s)))))
+
+;; Game -> Image
+;; !!!
+(define (render-game g) BACKGROUND) ; stub
+
+;; Game Key -> Game
+(define (handle-key g key) 0) ; stub
+
+;; Invaders -> Boolean
+;; !!! 
+(define (game-over? loi) false) ; stub
+
+;; Invaders -> Invaders
+;; !!!
+(define (advance-invaders loi) 0) ; stub
+
+;; Missiles -> Missiles
+;; !!!
+(define (advance-missiles lom) 0) ; stub
 
 ;; Tank -> Tank
 ;; Produce a Tank with incremented or decremented position x based on dir Interval[-1,1]
@@ -120,6 +202,7 @@
   (cond [(= (tank-dir t)  1) (make-tank (+ (tank-x t) 1) (tank-dir t))]
         [(= (tank-dir t) -1) (make-tank (- (tank-x t) 1) (tank-dir t))]
         [else (make-tank 0 0)]))
+
 
 
 (define G0 (make-game empty empty T0))
