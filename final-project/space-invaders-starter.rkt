@@ -100,7 +100,7 @@
 ;;           dx  is the invader along x by dx pixels per clock tick
 
 (define LOI1 empty)
-(define LOI2 (list I1 empty))
+(define LOI2 (list I1))
 (define LOI3 (list I1 I4 empty))
 (define LOI4 (list I1 I2 I3 empty))
 
@@ -108,9 +108,9 @@
 (define (fn-for-invaders invaders)
   (cond [(empty? invaders) (...)]
         [else
-         (... (invaders-x  (first invaders)) ;Natural
-              (invaders-y  (first invaders)) ;Natural
-              (invaders-dx (first invaders)) ;Natural
+         (... (invader-x  (first invaders)) ;Natural
+              (invader-y  (first invaders)) ;Natural
+              (invader-dx (first invaders)) ;Natural
               (fn-for-invaders (rest invaders)))]))
 
 ;; Missile
@@ -176,8 +176,19 @@
 (define (handle-key g key) 0) ; stub
 
 ;; Invaders -> Boolean
-;; !!! 
-(define (game-over? loi) false) ; stub
+;; Produce true if any invader has landed (height is greater or equal HEIGHT);
+(check-expect (game-over? empty) false)
+(check-expect (game-over? LOI2) false)
+(check-expect (game-over? LOI4) true)
+
+; (define (game-over? loi) false) ; stub
+
+;; took template from Invaders
+
+(define (game-over? invaders)
+  (cond [(empty? invaders) false]
+        [(>= (invader-y (first invaders)) HEIGHT) true]
+        [else (game-over? (rest invaders))]))
 
 ;; Invaders -> Invaders
 ;; !!!
