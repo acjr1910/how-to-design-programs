@@ -89,7 +89,7 @@
   (... (invader-x invader) (invader-y invader) (invader-dx invader)))
 
 
-;; Invaders
+;; ListOfInvaders
 (define-struct invaders (x y dx))
 ;; Invaders is one of:
 ;;  - empty
@@ -108,9 +108,9 @@
 (define (fn-for-invaders invaders)
   (cond [(empty? invaders) (...)]
         [else
-         (... (invader-x  (first invaders)) ;Natural
-              (invader-y  (first invaders)) ;Natural
-              (invader-dx (first invaders)) ;Natural
+         (... (invader-x       (first invaders)) ;Natural
+              (invader-y       (first invaders)) ;Natural
+              (invader-dx      (first invaders)) ;Natural
               (fn-for-invaders (rest invaders)))]))
 
 ;; Missile
@@ -118,16 +118,17 @@
 ;; Missile is (make-missile Number Number)
 ;; interp. the missile's location is x y in screen coordinates
 
-(define M1 (make-missile 150 300))                       ;not hit U1
-(define M2 (make-missile (invader-x I1) (+ (invader-y I1) 10)))  ;exactly hit U1
-(define M3 (make-missile (invader-x I1) (+ (invader-y I1)  5)))  ;> hit U1
+(define M1 (make-missile 150 300))                               ;not hit I1
+(define M2 (make-missile (invader-x I1) (+ (invader-y I1) 10)))  ;exactly hit I1
+(define M3 (make-missile (invader-x I1) (+ (invader-y I1)  5)))  ;> hit I1
+(define M4 (make-missile 150 250))
 
 #;
 (define (fn-for-missile m)
   (... (missile-x m) (missile-y m)))
 
-;; Missiles
-(define-struct missiles (x y))
+;; ListOfMissiles
+(define-struct lom (x y))
 ;; Missiles is one of:
 ;;  - empty
 ;;  - (cons (make-missile Natural Natural) Missiles)
@@ -137,13 +138,18 @@
 
 ;; !!! add missiles definition examples
 
+(define LOM1 empty)
+(define LOM2 (list M1))
+(define LOM3 (list M1 M2 M3))
+(define LOM4 (list M1 M2 M3 M4))
+
 #;
-(define (fn-for-missiles missiles)
-  (cond [(empty? missiles) (...)]
+(define (fn-for-lom lom)
+  (cond [(empty? lom) (...)]
         [else
-         (... (missiles-x  (first missiles)) ;Natural
-              (missiles-y  (first missiles)) ;Natural
-              (fn-for-missiles (rest missiles)))]))
+         (... (missile-x      (first lom))   ;Natural
+              (missile-y      (first lom))   ;Natural
+              (fn-for-lom     (rest  lom)))]))
 
 ;; Functions:
 
@@ -175,7 +181,7 @@
 ;; Game Key -> Game
 (define (handle-key g key) 0) ; stub
 
-;; Invaders -> Boolean
+;; ListOfInvaders -> Boolean
 ;; Produce true if any invader has landed (height is greater or equal HEIGHT);
 (check-expect (game-over? empty) false)
 (check-expect (game-over? LOI2) false)
@@ -190,13 +196,14 @@
         [(>= (invader-y (first invaders)) HEIGHT) true]
         [else (game-over? (rest invaders))]))
 
-;; Invaders -> Invaders
+;; ListOfInvaders -> ListOfInvaders
 ;; !!!
 (define (advance-invaders loi) 0) ; stub
 
-;; Missiles -> Missiles
+;; ListOfMissiles -> ListOfMissiles
 ;; !!!
 (define (advance-missiles lom) 0) ; stub
+
 
 ;; Tank -> Tank
 ;; Produce a Tank with incremented or decremented position x based on dir Interval[-1,1]
@@ -214,6 +221,38 @@
         [(= (tank-dir t) -1) (make-tank (- (tank-x t) 1) (tank-dir t))]
         [else (make-tank 0 0)]))
 
+;; Helper Functions:
+
+;; Invader ListOfMissiles -> ListOfMissile
+;; produce a list of missiles that do not hit the given invader.
+(check-expect (non-hit-missiles I1 empty) empty)
+(check-expect (non-hit-missiles I1 LOM3) (list M1 M3))
+(check-expect (non-hit-missiles (make-invader 155 105 10) (list M1 (make-missile 150 190) M3 M4)) (list M1 (make-missile 150 190) M4))
+
+; (define (non-hit-missiles invader lom) lom) ;stub
+
+(define (non-hit-missiles invader lom)
+  (cond [(empty? lom) empty]
+        [(missile-hits-invader? (first lom) invader) (rest lom)]
+        [else (cons (first lom) (non-hit-missiles invader (rest lom)))]))
+
+
+;; Missile Invader -> Boolean
+;; produce true if given missile hits given invader, otherwise produce false
+(check-expect (missile-hits-invader? (make-missile 100 120) (make-invader 110 125 5))  true)  ; in the hit range
+(check-expect (missile-hits-invader? (make-missile 150 220) (make-invader 150 220 10)) true)  ; same range
+(check-expect (missile-hits-invader? (make-missile 149 220) (make-invader 150 220 10)) true)  ; below hit range
+(check-expect (missile-hits-invader? (make-missile 150 180) (make-invader 185 125 5))  false) ; above hit range
+
+(define (missile-hits-invader? missile invader)
+  (and
+   (<= (missile-x missile) (+ (invader-x invader) HIT-RANGE))
+   (<= (missile-y missile) (+ (invader-y invader) HIT-RANGE))))
+
+
+;; Missile ListOfInvaders -> ListOfInvaders
+;; produce a list of invaders that are not hit by the given missile.
+;; !!!
 
 
 (define G0 (make-game empty empty T0))
