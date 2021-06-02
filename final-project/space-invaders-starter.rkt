@@ -196,14 +196,67 @@
         [(>= (invader-y (first invaders)) HEIGHT) true]
         [else (game-over? (rest invaders))]))
 
-;; ListOfInvaders ListOfMissiles -> ListOfInvaders
-;; !!!
+;; ListOfInvaders -> ListOfInvaders
+;; produce next ListOfInvaders state, advancing invader-x and invader-y.
+(check-expect (advance-invaders empty) empty)
+(check-expect (advance-invaders (list (make-invader 150 100 10) (make-invader 250 200 10)))
+              (list (make-invader 151 101 10) (make-invader 251 201 10)))
+
 (define (advance-invaders loi) 0) ; stub
 
-;; ListOfMissiles ListOfInvaders -> ListOfMissiles
+#;
+(define (fn-for-invaders invaders)
+  (cond [(empty? invaders) (...)]
+        [else
+         (... (invader-x       (first invaders)) ;Natural
+              (invader-y       (first invaders)) ;Natural
+              (invader-dx      (first invaders)) ;Natural
+              (fn-for-invaders (rest invaders)))]))
+
+;; Invader -> Invader
+;; produce next invader position x, y and dx
+(check-expect (advance-invader (make-invader 10 20  10)) (make-invader 11 21 10))
+(check-expect (advance-invader (make-invader 15 20 -10)) (make-invader 16 19 -10))
+
+;(define (advance-invader invader) 0) ;stub
+
+(define (advance-invader invader)
+  (make-invader (+ (invader-x invader) 1)
+                (next-invader-y (invader-y invader) (invader-dx invader))
+                (next-invader-dx (invader-dx invader) (invader-y invader))))
+
+;; Number Number -> Number
+;; produces next-invader-y position, where:
+;; first Number is invader pos y
+;; second Number is invader pos dx
+(check-expect (next-invader-y 10 10) 11)
+(check-expect (next-invader-y 10 -10) 9)
+
+; (define (next-invader-y y dx) 0) ;stub
+
+(define (next-invader-y y dx)
+  (if (< dx 0) (- y 1) (+ y 1)))
+
+;; Number Number -> Number
+;; produces next-invader-dx position, where:
+;; first Number is invader pos dx
+;; second Number is invader pos y
+(check-expect (next-invader-dx  10  50)   10)
+(check-expect (next-invader-dx -10  60)  -10)
+(check-expect (next-invader-dx -10  -2)   10)
+(check-expect (next-invader-dx  10 302)  -10)
+(check-expect (next-invader-dx -10  20)  -10)
+
+; (define (next-invader-dx y dx) 0) ;stub
+
+(define (next-invader-dx dx y)
+  (cond [(and (negative? dx) (< (- y 1) 0)) (abs dx)]
+        [(> (+ y 1) WIDTH) (- dx)]
+        [else dx]))
+
+;; ListOfMissiles -> ListOfMissiles
 ;; !!!
 (define (advance-missiles lom) 0) ; stub
-
 
 ;; Tank -> Tank
 ;; Produce a Tank with incremented or decremented position x based on dir Interval[-1,1]
