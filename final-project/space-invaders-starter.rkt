@@ -170,8 +170,8 @@
   (if (game-over? (game-invaders s))
       s
       (make-game
-       (advance-invaders (game-invaders s))
-       (advance-missiles (game-missiles s))
+       (advance-invaders (remove-hit-invaders (game-invaders s) (game-missiles s)))
+       (advance-missiles (remove-hit-missiles (game-missiles s) (game-invaders s)))
        (advance-tank     (game-tank s)))))
 
 ;; Game -> Image
@@ -196,11 +196,11 @@
         [(>= (invader-y (first invaders)) HEIGHT) true]
         [else (game-over? (rest invaders))]))
 
-;; ListOfInvaders -> ListOfInvaders
+;; ListOfInvaders ListOfMissiles -> ListOfInvaders
 ;; !!!
 (define (advance-invaders loi) 0) ; stub
 
-;; ListOfMissiles -> ListOfMissiles
+;; ListOfMissiles ListOfInvaders -> ListOfMissiles
 ;; !!!
 (define (advance-missiles lom) 0) ; stub
 
@@ -236,11 +236,50 @@
         [(missile-hits-invader? (first lom) invader) (rest lom)]
         [else (cons (first lom) (non-hit-missiles invader (rest lom)))]))
 
+;; Invader ListOfMissiles -> Boolean
+;; produce true if any missile in a given lom hits given invader
+(check-expect (lom-hits-invader? I1 empty) false)
+(check-expect (lom-hits-invader? I1 (list (make-missile 450 500) (make-missile 600 800))) false)
+(check-expect (lom-hits-invader? I1 LOM4) true)
+(check-expect (lom-hits-invader? (first
+                                  (list (make-invader 150 500 -10)
+                                        (make-invader 150 510 10)))
+                                 (list (make-missile 150 300)
+                                       (make-missile 150 105)
+                                       (make-missile 150 250))) false)
+
+;(define (lom-hits-invader? i lom) false) ;stub
+
+(define (lom-hits-invader? i lom)
+  (cond [(empty? lom) false]
+        [else
+         (if (missile-hits-invader? (first lom) i)
+             true
+             (lom-hits-invader? i (rest lom)))]))
+
+;; Invader ListOfMissiles -> Boolean
+;; produce true if any invader in a given loi hits given missile
+(check-expect (loi-hits-missile? M1 LOI4) false)
+(check-expect (loi-hits-missile? M2 LOI4) true)
+
+; (define (loi-hits-missile? m loi) false) ;stub
+
+(define (loi-hits-missile? m loi)
+  (cond [(empty? loi) false]
+        [else
+         (if (missile-hits-invader? m (first loi))
+             true
+             (loi-hits-missile? m (rest loi)))]))
+
 ;; Missile ListOfInvaders -> ListOfInvaders
 ;; produce a list of invaders that are not hit by the given missile.
 (check-expect (non-hit-invaders M1 empty) empty)
 (check-expect (non-hit-invaders (make-missile 145 505) LOI4) (list I1 I3))
-;; (check-expect (non-hit-invaders (make-invader 155 105 10) (list M1 (make-missile 150 190) M3 M4)) (list M1 (make-missile 150 190) M4))
+(check-expect (non-hit-invaders (make-missile 155 105)
+                                (list (make-invader 250 100 10)
+                                      (make-invader 150 110 10)
+                                      (make-invader 350 100 10)))
+              (list (make-invader 250 100 10) (make-invader 350 100 10)))
 
 ; (define (non-hit-invaders missile loi) loi) ;stub
 
@@ -249,20 +288,64 @@
         [(missile-hits-invader? missile (first loi)) (rest loi)]
         [else (cons (first loi) (non-hit-invaders missile (rest loi)))]))
 
-
 ;; Missile Invader -> Boolean
 ;; produce true if given missile hits given invader, otherwise produce false
 (check-expect (missile-hits-invader? (make-missile 100 120) (make-invader 110 125 5))  true)  ; in the hit range
 (check-expect (missile-hits-invader? (make-missile 150 220) (make-invader 150 220 10)) true)  ; same range
 (check-expect (missile-hits-invader? (make-missile 149 220) (make-invader 150 220 10)) true)  ; below hit range
 (check-expect (missile-hits-invader? (make-missile 150 180) (make-invader 185 125 5))  false) ; above hit range
+(check-expect (missile-hits-invader? (make-missile 150 300) (make-invader 150 500 -10)) false)
 
 (define (missile-hits-invader? missile invader)
   (and
-   (<= (missile-x missile) (+ (invader-x invader) HIT-RANGE))
-   (<= (missile-y missile) (+ (invader-y invader) HIT-RANGE))))
+   (<= (abs (- (missile-x missile) (invader-x invader))) HIT-RANGE)
+   (<= (abs (- (missile-y missile) (invader-y invader))) HIT-RANGE)))
 
+;; ListOfInvaders ListOfMissiles -> Missile
+;; produces first missile that hits any invader in ListOfInvaders
+;; assume at least one invader is hit by on missile of ListOfMissiles
+(check-expect (first-hit-missile (cons (make-invader 110 125 5) empty) (cons (make-missile 100 120) empty)) (make-missile 100 120))
+(check-expect (first-hit-missile LOI4 LOM4) (make-missile 150 110))
+(check-expect (first-hit-missile LOI4 empty) empty)
+(check-expect (first-hit-missile empty LOM4) empty)
 
+(define (first-hit-missile loi lom)
+  (cond [(empty? lom) empty]
+        [(empty? loi) empty]
+        [else
+         (if
+          (and
+           (<= (missile-x (first lom)) (+ (invader-x (first loi)) HIT-RANGE))
+           (<= (missile-y (first lom)) (+ (invader-y (first loi)) HIT-RANGE)))
+          (first lom)
+          (first-hit-missile (rest loi) (rest lom)))]))
+
+;; ListOfInvaders ListOfMissiles -> ListOfInvaders
+;; produce list of non hit invaders given invaders and missiles.
+;(check-expect (remove-hit-invaders LOI1 LOM1) LOI1)
+(check-expect (remove-hit-invaders LOI4 LOM4) (list (make-invader 150 500 -10) (make-invader 150 510 10)))
+(check-expect (remove-hit-invaders LOI4 empty) LOI4)
+
+; (define (remove-hit-invaders loi lom) empty) ;stub
+
+(define (remove-hit-invaders loi lom)
+  (cond [(empty? loi) empty]
+        [(empty? lom) loi]
+        [(lom-hits-invader? (first loi) lom) (remove-hit-invaders (rest loi) (non-hit-missiles (first loi) lom))]
+        [else (cons (first loi) (remove-hit-invaders (rest loi) lom))]))
+
+;; ListOfMissiles ListOfInvaders -> ListOfInvaders
+;; produce list of non hit missiles given missiles and invaders.
+(check-expect (remove-hit-missiles LOM4 empty) LOM4)
+(check-expect (remove-hit-missiles LOM4 LOI4) (list (make-missile 150 300) (make-missile 150 105) (make-missile 150 250)))
+
+; (define (remove-hit-missiles lom loi) empty) ;stub
+
+(define (remove-hit-missiles lom loi)
+  (cond [(empty? loi) lom]
+        [(empty? lom) empty]
+        [(loi-hits-missile? (first lom) loi) (remove-hit-missiles (rest lom) (non-hit-invaders (first lom) loi))]
+        [else (cons (first lom) (remove-hit-missiles (rest lom) loi))]))
 
 (define G0 (make-game empty empty T0))
 (define G1 (make-game empty empty T1))
