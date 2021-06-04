@@ -21,7 +21,7 @@
 
 (define INVADE-RATE 100)
 
-(define BACKGROUND (empty-scene WIDTH HEIGHT))
+(define BACKGROUND (empty-scene WIDTH HEIGHT (color 0 0 0 0)))
 
 (define INVADER
   (overlay/xy (ellipse 10 15 "outline" "blue")              ;cockpit cover
@@ -38,8 +38,6 @@
 (define TANK-HEIGHT/2 (/ (image-height TANK) 2))
 
 (define MISSILE (ellipse 5 15 "solid" "red"))
-
-
 
 ;; Data Definitions:
 
@@ -103,6 +101,7 @@
 (define LOI2 (list I1))
 (define LOI3 (list I1 I4))
 (define LOI4 (list I1 I2 I3))
+(define LOI5 (list (make-invader 100 200 10) (make-invader 140 250 -10) (make-invader 200 290 -10) (make-invader 180 210 10)))
 
 #;
 (define (fn-for-invaders invaders)
@@ -136,8 +135,6 @@
 ;;           x is the missile position x in pixels 
 ;;           y is the missile position y in pixels
 
-;; !!! add missiles definition examples
-
 (define LOM1 empty)
 (define LOM2 (list M1))
 (define LOM3 (list M1 M2 M3))
@@ -163,7 +160,48 @@
     (on-key  handle-key))) ; Game KeyEvent -> Game
 
 ;; Game -> Game
-;; !!!
+;; produce next game state
+(check-expect (advance-game G3) G3) ; gameover
+
+(check-expect (advance-game
+               (make-game
+                (list
+                 (make-invader 150 100 12)
+                 (make-invader 150 450 -10))
+                (list
+                 (make-missile 150 300)
+                 (make-missile 150 110))
+                (make-tank 50 1)))
+              (make-game
+               (list (make-invader 151 299 -10))
+               (list (make-missile 150 299))
+               (make-tank 51 1)))
+
+(check-expect (advance-game (make-game
+                             (list
+                              (make-invader 150 100 12)
+                              (make-invader 150 450 -10))
+                             empty
+                             (make-tank 50 -1)))
+              (make-game
+               (list
+                (make-invader 151 101 12)
+                (make-invader 151 299 -10))
+               empty
+               (make-tank 49 -1)))
+
+(check-expect (advance-game (make-game empty
+                                       (list
+                                        (make-missile 150 300)
+                                        (make-missile 150 110))
+                                       (make-tank 200 1)))
+              (make-game empty
+                         (list
+                          (make-missile 150 299)
+                          (make-missile 150 109))
+                         (make-tank 201 1)))
+
+
 ;(define (advance-game s) 0) ; stub
 
 (define (advance-game s)
@@ -175,8 +213,57 @@
        (advance-tank     (game-tank s)))))
 
 ;; Game -> Image
-;; !!!
-(define (render-game g) BACKGROUND) ; stub
+;; produce game image to render
+
+; (define (render-game g) BACKGROUND) ; stub
+
+(define (render-game s)
+  (overlay
+   (render-invaders (game-invaders s))
+   (render-missiles (game-missiles s))
+   (render-tank     (game-tank     s))))
+
+;; ListOfInvaders -> Image
+;; produces an image of invaders
+(check-expect (render-invaders (list
+                                (make-invader 150 200 10)
+                                (make-invader 200 250 15)
+                                (make-invader 300  80 10)))
+              (place-image INVADER 150 200
+                           (place-image INVADER 200 250
+                                        (place-image INVADER 300 80 BACKGROUND))))
+
+; (define (render-invaders loi) 0); stub
+
+(define (render-invaders invaders)
+  (cond [(empty? invaders) BACKGROUND]
+        [else
+         (place-image INVADER (invader-x (first invaders)) (invader-y (first invaders))
+                      (render-invaders (rest invaders)))]))
+
+;; ListOfMissiles -> Image
+;; produces an image of missiles
+(check-expect (render-missiles (list
+                                (make-missile 150 200)
+                                (make-missile 200 250)))
+              (place-image MISSILE 150 200 (place-image MISSILE 200 250 BACKGROUND)))
+
+; (define (render-missiles lom) 0); stub
+
+(define (render-missiles missiles)
+  (cond [(empty? missiles) BACKGROUND]
+        [else
+         (place-image MISSILE (missile-x (first missiles)) (missile-y (first missiles))
+                      (render-missiles (rest missiles)))]))
+
+;; Tank -> Image
+;; renders tank image
+(check-expect (render-tank (make-tank 10 1)) (place-image TANK 10 HEIGHT BACKGROUND))
+
+; (define (render-tank t) 0) ;stub
+
+(define (render-tank t) (place-image TANK (tank-x t) HEIGHT BACKGROUND))
+
 
 ;; Game Key -> Game
 (define (handle-key g key) 0) ; stub
@@ -201,17 +288,21 @@
 (check-expect (advance-invaders empty) empty)
 (check-expect (advance-invaders (list (make-invader 150 100 10) (make-invader 250 200 10)))
               (list (make-invader 151 101 10) (make-invader 251 201 10)))
+(check-expect (advance-invaders (list (make-invader 150 100 -10) (make-invader 250 200 10)))
+              (list (make-invader 151 99 -10) (make-invader 251 201 10)))
+(check-expect (advance-invaders (list (make-invader 150 WIDTH 10) (make-invader 250 200 10)))
+              (list (make-invader 151 299 -10) (make-invader 251 201 10)))
+(check-expect (advance-invaders (list (make-invader 150 0 -10) (make-invader 250 200 10)))
+              (list (make-invader 151 1 10) (make-invader 251 201 10)))
+(check-expect (advance-invaders (list (make-invader 150 0 10) (make-invader 250 200 10)))
+              (list (make-invader 151 1 10) (make-invader 251 201 10)))
 
-(define (advance-invaders loi) 0) ; stub
+; (define (advance-invaders loi) 0) ; stub
 
-#;
-(define (fn-for-invaders invaders)
-  (cond [(empty? invaders) (...)]
+(define (advance-invaders invaders)
+  (cond [(empty? invaders) empty]
         [else
-         (... (invader-x       (first invaders)) ;Natural
-              (invader-y       (first invaders)) ;Natural
-              (invader-dx      (first invaders)) ;Natural
-              (fn-for-invaders (rest invaders)))]))
+         (cons (advance-invader (first invaders)) (advance-invaders (rest invaders)))]))
 
 ;; Invader -> Invader
 ;; produce next invader position x, y and dx
@@ -222,20 +313,26 @@
 
 (define (advance-invader invader)
   (make-invader (+ (invader-x invader) 1)
-                (next-invader-y (invader-y invader) (invader-dx invader))
+                (next-invader-y (invader-y invader) (next-invader-dx (invader-dx invader) (invader-y invader)))
                 (next-invader-dx (invader-dx invader) (invader-y invader))))
 
 ;; Number Number -> Number
 ;; produces next-invader-y position, where:
 ;; first Number is invader pos y
 ;; second Number is invader pos dx
-(check-expect (next-invader-y 10 10) 11)
-(check-expect (next-invader-y 10 -10) 9)
+(check-expect (next-invader-y 10 10)   11)
+(check-expect (next-invader-y 10 -10)   9)
+(check-expect (next-invader-y 300 10) 299)
+(check-expect (next-invader-y 299 10) 300)
+(check-expect (next-invader-y 1 -10)    0)
+(check-expect (next-invader-y 0 -10)    1)
 
 ; (define (next-invader-y y dx) 0) ;stub
 
 (define (next-invader-y y dx)
-  (if (< dx 0) (- y 1) (+ y 1)))
+  (cond [(<= y 0) 1]
+        [(>= y WIDTH) 299]
+        [else (if (negative? dx) (- y 1) (+ y 1))]))
 
 ;; Number Number -> Number
 ;; produces next-invader-dx position, where:
@@ -246,17 +343,34 @@
 (check-expect (next-invader-dx -10  -2)   10)
 (check-expect (next-invader-dx  10 302)  -10)
 (check-expect (next-invader-dx -10  20)  -10)
+(check-expect (next-invader-dx  10 299)   10)
+(check-expect (next-invader-dx  10 300)  -10)
+(check-expect (next-invader-dx -10 450)  -10)
 
 ; (define (next-invader-dx y dx) 0) ;stub
 
 (define (next-invader-dx dx y)
-  (cond [(and (negative? dx) (< (- y 1) 0)) (abs dx)]
-        [(> (+ y 1) WIDTH) (- dx)]
-        [else dx]))
+  (cond
+    [(<= y 0)   (abs dx)]
+    [(and (>= y WIDTH) (negative? dx)) dx]
+    [(>= y WIDTH) (- dx)]
+    [else dx]))
 
 ;; ListOfMissiles -> ListOfMissiles
-;; !!!
-(define (advance-missiles lom) 0) ; stub
+;; produce list of missiles, advancing each missile y pos by one.
+(check-expect (advance-missiles empty) empty)
+(check-expect (advance-missiles (list (make-missile 250 100) (make-missile 350 200)))
+              (list (make-missile 250 99) (make-missile 350 199)))
+(check-expect (advance-missiles (list (make-missile 250 100) (make-missile 350 200) (make-missile 450 350)))
+              (list (make-missile 250 99) (make-missile 350 199) (make-missile 450 349)))
+
+; (define (advance-missiles lom) empty) ; stub
+
+(define (advance-missiles lom)
+  (cond [(empty? lom) empty]
+        [else
+         (cons (make-missile (missile-x (first lom)) (- (missile-y (first lom)) 1))
+               (advance-missiles (rest  lom)))]))
 
 ;; Tank -> Tank
 ;; Produce a Tank with incremented or decremented position x based on dir Interval[-1,1]
@@ -270,8 +384,10 @@
 ;; took template from Tank
 
 (define (advance-tank t)
-  (cond [(= (tank-dir t)  1) (make-tank (+ (tank-x t) 1) (tank-dir t))]
-        [(= (tank-dir t) -1) (make-tank (- (tank-x t) 1) (tank-dir t))]
+  (cond [(<= (tank-x t) 0)     (make-tank                        1               1)]
+        [(>= (tank-x t) WIDTH) (make-tank               (- WIDTH 1)             -1)]
+        [(= (tank-dir t)  1)   (make-tank (+ (tank-x t) TANK-SPEED)   (tank-dir t))]
+        [(= (tank-dir t) -1)   (make-tank (- (tank-x t) TANK-SPEED)   (tank-dir t))]
         [else (make-tank 0 0)]))
 
 ;; Helper Functions:
@@ -280,7 +396,8 @@
 ;; produce a list of missiles that do not hit the given invader.
 (check-expect (non-hit-missiles I1 empty) empty)
 (check-expect (non-hit-missiles I1 LOM3) (list M1 M3))
-(check-expect (non-hit-missiles (make-invader 155 105 10) (list M1 (make-missile 150 190) M3 M4)) (list M1 (make-missile 150 190) M4))
+(check-expect (non-hit-missiles (make-invader 155 105 10) (list M1 (make-missile 150 190) M3 M4))
+              (list M1 (make-missile 150 190) M4))
 
 ; (define (non-hit-missiles invader lom) lom) ;stub
 
@@ -334,6 +451,7 @@
                                       (make-invader 350 100 10)))
               (list (make-invader 250 100 10) (make-invader 350 100 10)))
 
+
 ; (define (non-hit-invaders missile loi) loi) ;stub
 
 (define (non-hit-invaders missile loi)
@@ -357,7 +475,9 @@
 ;; ListOfInvaders ListOfMissiles -> Missile
 ;; produces first missile that hits any invader in ListOfInvaders
 ;; assume at least one invader is hit by on missile of ListOfMissiles
-(check-expect (first-hit-missile (cons (make-invader 110 125 5) empty) (cons (make-missile 100 120) empty)) (make-missile 100 120))
+(check-expect (first-hit-missile (cons (make-invader 110 125 5) empty)
+                                 (cons (make-missile 100 120) empty))
+              (make-missile 100 120))
 (check-expect (first-hit-missile LOI4 LOM4) (make-missile 150 110))
 (check-expect (first-hit-missile LOI4 empty) empty)
 (check-expect (first-hit-missile empty LOM4) empty)
@@ -390,7 +510,8 @@
 ;; ListOfMissiles ListOfInvaders -> ListOfInvaders
 ;; produce list of non hit missiles given missiles and invaders.
 (check-expect (remove-hit-missiles LOM4 empty) LOM4)
-(check-expect (remove-hit-missiles LOM4 LOI4) (list (make-missile 150 300) (make-missile 150 105) (make-missile 150 250)))
+(check-expect (remove-hit-missiles LOM4 LOI4)
+              (list (make-missile 150 300) (make-missile 150 105) (make-missile 150 250)))
 
 ; (define (remove-hit-missiles lom loi) empty) ;stub
 
@@ -404,4 +525,7 @@
 (define G1 (make-game empty empty T1))
 (define G2 (make-game (list I1) (list M1) T1))
 (define G3 (make-game (list I1 I2) (list M1 M2) T1))
+(define G4 (make-game LOI5 (list M1) T1))
+
+(main G4)
 
