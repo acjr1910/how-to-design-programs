@@ -173,9 +173,9 @@
                  (make-missile 150 110))
                 (make-tank 50 1)))
               (make-game
-               (list (make-invader 151 299 -10))
+               (list (make-invader (+ 150 INVADER-X-SPEED) 299 -10))
                (list (make-missile 150 299))
-               (make-tank 51 1)))
+               (make-tank (+ 50 TANK-SPEED) 1)))
 
 (check-expect (advance-game (make-game
                              (list
@@ -185,10 +185,10 @@
                              (make-tank 50 -1)))
               (make-game
                (list
-                (make-invader 151 101 12)
-                (make-invader 151 299 -10))
+                (make-invader (+ 150 INVADER-X-SPEED) (+ 100 INVADER-Y-SPEED) 12)
+                (make-invader (+ 150 INVADER-X-SPEED) 299 -10))
                empty
-               (make-tank 49 -1)))
+               (make-tank (- 50 TANK-SPEED) -1)))
 
 (check-expect (advance-game (make-game empty
                                        (list
@@ -199,7 +199,7 @@
                          (list
                           (make-missile 150 299)
                           (make-missile 150 109))
-                         (make-tank 201 1)))
+                         (make-tank (+ 200 TANK-SPEED) 1)))
 
 
 ;(define (advance-game s) 0) ; stub
@@ -287,15 +287,15 @@
 ;; produce next ListOfInvaders state, advancing invader-x and invader-y.
 (check-expect (advance-invaders empty) empty)
 (check-expect (advance-invaders (list (make-invader 150 100 10) (make-invader 250 200 10)))
-              (list (make-invader 151 101 10) (make-invader 251 201 10)))
+              (list (make-invader (+ 150 INVADER-X-SPEED) (+ 100 INVADER-Y-SPEED) 10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 (check-expect (advance-invaders (list (make-invader 150 100 -10) (make-invader 250 200 10)))
-              (list (make-invader 151 99 -10) (make-invader 251 201 10)))
+              (list (make-invader (+ 150 INVADER-X-SPEED) (- 100 INVADER-Y-SPEED) -10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 (check-expect (advance-invaders (list (make-invader 150 WIDTH 10) (make-invader 250 200 10)))
-              (list (make-invader 151 299 -10) (make-invader 251 201 10)))
+              (list (make-invader (+ 150 INVADER-X-SPEED) 299 -10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 (check-expect (advance-invaders (list (make-invader 150 0 -10) (make-invader 250 200 10)))
-              (list (make-invader 151 1 10) (make-invader 251 201 10)))
+              (list (make-invader (+ 150 INVADER-X-SPEED) 1 10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 (check-expect (advance-invaders (list (make-invader 150 0 10) (make-invader 250 200 10)))
-              (list (make-invader 151 1 10) (make-invader 251 201 10)))
+              (list (make-invader (+ 150 INVADER-X-SPEED) 1 10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 
 ; (define (advance-invaders loi) 0) ; stub
 
@@ -306,33 +306,35 @@
 
 ;; Invader -> Invader
 ;; produce next invader position x, y and dx
-(check-expect (advance-invader (make-invader 10 20  10)) (make-invader 11 21 10))
-(check-expect (advance-invader (make-invader 15 20 -10)) (make-invader 16 19 -10))
+(check-expect (advance-invader (make-invader 10 20  10)) (make-invader (+ 10 INVADER-X-SPEED) (+ 20 INVADER-Y-SPEED) 10))
+(check-expect (advance-invader (make-invader 15 20 -10)) (make-invader (+ 15 INVADER-X-SPEED) (- 20 INVADER-Y-SPEED) -10))
 
 ;(define (advance-invader invader) 0) ;stub
 
 (define (advance-invader invader)
-  (make-invader (+ (invader-x invader) 1)
+  (make-invader (+ (invader-x invader) INVADER-X-SPEED)
                 (next-invader-y (invader-y invader) (next-invader-dx (invader-dx invader) (invader-y invader)))
                 (next-invader-dx (invader-dx invader) (invader-y invader))))
 
 ;; Number Number -> Number
+;; !!! the position that should change is position x not position y. Fix this before adding key missiles and random invader
 ;; produces next-invader-y position, where:
 ;; first Number is invader pos y
 ;; second Number is invader pos dx
-(check-expect (next-invader-y 10 10)   11)
-(check-expect (next-invader-y 10 -10)   9)
-(check-expect (next-invader-y 300 10) 299)
-(check-expect (next-invader-y 299 10) 300)
-(check-expect (next-invader-y 1 -10)    0)
-(check-expect (next-invader-y 0 -10)    1)
+(check-expect (next-invader-y 10 10)   11.5)
+(check-expect (next-invader-y 10 -10)   8.5)
+(check-expect (next-invader-y 300 10)   299)
+(check-expect (next-invader-y 299 10) 300.5)
+(check-expect (next-invader-y 1 -10)   -0.5)
+(check-expect (next-invader-y 0 -10)      1)
+(check-expect (next-invader-y 40 -10)  38.5)
 
 ; (define (next-invader-y y dx) 0) ;stub
 
 (define (next-invader-y y dx)
   (cond [(<= y 0) 1]
         [(>= y WIDTH) 299]
-        [else (if (negative? dx) (- y 1) (+ y 1))]))
+        [else (if (negative? dx) (- y INVADER-Y-SPEED) (+ y INVADER-Y-SPEED))]))
 
 ;; Number Number -> Number
 ;; produces next-invader-dx position, where:
@@ -375,9 +377,9 @@
 ;; Tank -> Tank
 ;; Produce a Tank with incremented or decremented position x based on dir Interval[-1,1]
 ;; Assume: Tank dir remains the same.
-(check-expect (advance-tank (make-tank 0  0))  (make-tank 0  0))
-(check-expect (advance-tank (make-tank 1  1))  (make-tank 2  1))
-(check-expect (advance-tank (make-tank 2 -1))  (make-tank 1 -1))
+(check-expect (advance-tank (make-tank 0  0))  (make-tank 1  1))
+(check-expect (advance-tank (make-tank 1  1))  (make-tank (+ 1 TANK-SPEED)  1))
+(check-expect (advance-tank (make-tank 2 -1))  (make-tank (- 2 TANK-SPEED) -1))
 
 ; (define (advance-tank t) (make-tank 0 0)) ; stub
 
@@ -525,7 +527,7 @@
 (define G1 (make-game empty empty T1))
 (define G2 (make-game (list I1) (list M1) T1))
 (define G3 (make-game (list I1 I2) (list M1 M2) T1))
-(define G4 (make-game LOI5 (list M1) T1))
+(define G4 (make-game LOI5 (list M1 M2) T1))
 
 (main G4)
 
