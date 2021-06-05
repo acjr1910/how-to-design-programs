@@ -270,8 +270,33 @@
 ;; arrow left changes tank direction to the left
 ;; space add new invader at the end of game ListOfInvaders
 ;; based on position of the tank x and y
-;; !!!
-(define (handle-key g key) 0) ; stub
+(check-expect (handle-key (make-game empty empty (make-tank 50 1))  "left") (make-game empty empty (make-tank 48 -1)))
+(check-expect (handle-key (make-game empty empty (make-tank 50 1)) "right") (make-game empty empty (make-tank 52  1)))
+(check-expect (handle-key (make-game empty empty (make-tank 50 1))     " ") (make-game empty (list (make-missile 50 HEIGHT)) (make-tank 50  1)))
+
+
+; (define (handle-key g key) 0) ; stub
+
+(define (handle-key s a-key)
+  (cond
+    [(key=? a-key "left")  (make-game (game-invaders s) (game-missiles s) (make-tank (- (tank-x (game-tank s)) TANK-SPEED) -1))]
+    [(key=? a-key "right") (make-game (game-invaders s) (game-missiles s) (make-tank (+ (tank-x (game-tank s)) TANK-SPEED)  1))]
+    [(key=? a-key " ")     (make-game (game-invaders s) (insert-missile (game-missiles s) (tank-x (game-tank s))) (game-tank s))]
+    [else s]))
+
+;; ListOfMissiles Number -> ListOfMissiles
+;; !!! insert missile into a ListOfMissiles, in posn x Number
+(check-expect (insert-missile empty 10) (list (make-missile 10 HEIGHT)))
+(check-expect (insert-missile (list (make-missile 20 30) (make-missile 40 50)) 20)
+              (list (make-missile 20 30) (make-missile 40 50) (make-missile 20 HEIGHT)))
+
+; (define (insert-misssile loi x) empty) ;stub
+
+(define (insert-missile lom x)
+  (cond [(empty? lom) (cons (make-missile x HEIGHT) empty)]
+        [else
+         (cons (make-missile (missile-x (first lom)) (missile-y (first lom)))
+               (insert-missile (rest lom) x))]))
 
 ;; ListOfInvaders -> Boolean
 ;; Produce true if any invader has landed (height is greater or equal HEIGHT);
@@ -322,7 +347,7 @@
                 (next-invader-dx (invader-dx invader) (invader-x invader))))
 
 ;; Number Number -> Number
-;; !!! the position that should change is position x not position y. Fix this before adding key missiles and random invader
+;; the position that should change is position x not position y. Fix this before adding key missiles and random invader
 ;; produces next-invader-x position, where:
 ;; first Number is invader pos x
 ;; second Number is invader pos dx
