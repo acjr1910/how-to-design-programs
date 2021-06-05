@@ -173,7 +173,7 @@
                  (make-missile 150 110))
                 (make-tank 50 1)))
               (make-game
-               (list (make-invader (+ 150 INVADER-X-SPEED) 299 -10))
+               (list (make-invader (- 150 INVADER-X-SPEED) 451.5 -10))
                (list (make-missile 150 299))
                (make-tank (+ 50 TANK-SPEED) 1)))
 
@@ -186,7 +186,7 @@
               (make-game
                (list
                 (make-invader (+ 150 INVADER-X-SPEED) (+ 100 INVADER-Y-SPEED) 12)
-                (make-invader (+ 150 INVADER-X-SPEED) 299 -10))
+                (make-invader (- 150 INVADER-X-SPEED) 451.5 -10))
                empty
                (make-tank (- 50 TANK-SPEED) -1)))
 
@@ -264,8 +264,13 @@
 
 (define (render-tank t) (place-image TANK (tank-x t) HEIGHT BACKGROUND))
 
-
 ;; Game Key -> Game
+;; handle user arrow and space keys, where:
+;; arrow right changes tank direction to the right
+;; arrow left changes tank direction to the left
+;; space add new invader at the end of game ListOfInvaders
+;; based on position of the tank x and y
+;; !!!
 (define (handle-key g key) 0) ; stub
 
 ;; ListOfInvaders -> Boolean
@@ -289,13 +294,13 @@
 (check-expect (advance-invaders (list (make-invader 150 100 10) (make-invader 250 200 10)))
               (list (make-invader (+ 150 INVADER-X-SPEED) (+ 100 INVADER-Y-SPEED) 10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 (check-expect (advance-invaders (list (make-invader 150 100 -10) (make-invader 250 200 10)))
-              (list (make-invader (+ 150 INVADER-X-SPEED) (- 100 INVADER-Y-SPEED) -10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
+              (list (make-invader (- 150 INVADER-X-SPEED) (+ 100 INVADER-Y-SPEED) -10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 (check-expect (advance-invaders (list (make-invader 150 WIDTH 10) (make-invader 250 200 10)))
-              (list (make-invader (+ 150 INVADER-X-SPEED) 299 -10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
+              (list (make-invader (+ 150 INVADER-X-SPEED) 301.5 10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 (check-expect (advance-invaders (list (make-invader 150 0 -10) (make-invader 250 200 10)))
-              (list (make-invader (+ 150 INVADER-X-SPEED) 1 10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
+              (list (make-invader (- 150 INVADER-X-SPEED) 1.5 -10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 (check-expect (advance-invaders (list (make-invader 150 0 10) (make-invader 250 200 10)))
-              (list (make-invader (+ 150 INVADER-X-SPEED) 1 10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
+              (list (make-invader (+ 150 INVADER-X-SPEED) 1.5 10) (make-invader (+ 250 INVADER-X-SPEED) (+ 200 INVADER-Y-SPEED) 10)))
 
 ; (define (advance-invaders loi) 0) ; stub
 
@@ -306,35 +311,35 @@
 
 ;; Invader -> Invader
 ;; produce next invader position x, y and dx
-(check-expect (advance-invader (make-invader 10 20  10)) (make-invader (+ 10 INVADER-X-SPEED) (+ 20 INVADER-Y-SPEED) 10))
-(check-expect (advance-invader (make-invader 15 20 -10)) (make-invader (+ 15 INVADER-X-SPEED) (- 20 INVADER-Y-SPEED) -10))
+(check-expect (advance-invader (make-invader 10 20  10)) (make-invader (+ 10 INVADER-X-SPEED) (+ 20 INVADER-Y-SPEED)  10))
+(check-expect (advance-invader (make-invader 15 20 -10)) (make-invader (- 15 INVADER-X-SPEED) (+ 20 INVADER-Y-SPEED) -10))
 
 ;(define (advance-invader invader) 0) ;stub
 
 (define (advance-invader invader)
-  (make-invader (+ (invader-x invader) INVADER-X-SPEED)
-                (next-invader-y (invader-y invader) (next-invader-dx (invader-dx invader) (invader-y invader)))
-                (next-invader-dx (invader-dx invader) (invader-y invader))))
+  (make-invader (next-invader-x (invader-x invader) (next-invader-dx (invader-dx invader) (invader-x invader)))
+                (+ (invader-y invader) INVADER-Y-SPEED)
+                (next-invader-dx (invader-dx invader) (invader-x invader))))
 
 ;; Number Number -> Number
 ;; !!! the position that should change is position x not position y. Fix this before adding key missiles and random invader
-;; produces next-invader-y position, where:
-;; first Number is invader pos y
+;; produces next-invader-x position, where:
+;; first Number is invader pos x
 ;; second Number is invader pos dx
-(check-expect (next-invader-y 10 10)   11.5)
-(check-expect (next-invader-y 10 -10)   8.5)
-(check-expect (next-invader-y 300 10)   299)
-(check-expect (next-invader-y 299 10) 300.5)
-(check-expect (next-invader-y 1 -10)   -0.5)
-(check-expect (next-invader-y 0 -10)      1)
-(check-expect (next-invader-y 40 -10)  38.5)
+(check-expect (next-invader-x  10  10)   11.5)
+(check-expect (next-invader-x  10 -10)    8.5)
+(check-expect (next-invader-x 300  10)    299)
+(check-expect (next-invader-x 299  10)  300.5)
+(check-expect (next-invader-x   1 -10)   -0.5)
+(check-expect (next-invader-x   0 -10)      1)
+(check-expect (next-invader-x  40 -10)   38.5)
 
-; (define (next-invader-y y dx) 0) ;stub
+; (define (next-invader-x x dx) 0) ;stub
 
-(define (next-invader-y y dx)
-  (cond [(<= y 0) 1]
-        [(>= y WIDTH) 299]
-        [else (if (negative? dx) (- y INVADER-Y-SPEED) (+ y INVADER-Y-SPEED))]))
+(define (next-invader-x x dx)
+  (cond [(<= x 0) 1]
+        [(>= x WIDTH) 299]
+        [else (if (negative? dx) (- x INVADER-X-SPEED) (+ x INVADER-X-SPEED))]))
 
 ;; Number Number -> Number
 ;; produces next-invader-dx position, where:
@@ -349,13 +354,13 @@
 (check-expect (next-invader-dx  10 300)  -10)
 (check-expect (next-invader-dx -10 450)  -10)
 
-; (define (next-invader-dx y dx) 0) ;stub
+; (define (next-invader-dx dx x) 0) ;stub
 
-(define (next-invader-dx dx y)
+(define (next-invader-dx dx x)
   (cond
-    [(<= y 0)   (abs dx)]
-    [(and (>= y WIDTH) (negative? dx)) dx]
-    [(>= y WIDTH) (- dx)]
+    [(<= x 0)   (abs dx)]
+    [(and (>= x WIDTH) (negative? dx)) dx]
+    [(>= x WIDTH) (- dx)]
     [else dx]))
 
 ;; ListOfMissiles -> ListOfMissiles
