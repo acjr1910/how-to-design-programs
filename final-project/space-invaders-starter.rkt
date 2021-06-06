@@ -174,7 +174,7 @@
                 (make-tank 50 1)))
               (make-game
                (list (make-invader (- 150 INVADER-X-SPEED) 451.5 -10))
-               (list (make-missile 150 299))
+               (list (make-missile 150 (- 300 MISSILE-SPEED)))
                (make-tank (+ 50 TANK-SPEED) 1)))
 
 (check-expect (advance-game (make-game
@@ -197,8 +197,8 @@
                                        (make-tank 200 1)))
               (make-game empty
                          (list
-                          (make-missile 150 299)
-                          (make-missile 150 109))
+                          (make-missile 150 (- 300 MISSILE-SPEED))
+                          (make-missile 150 (- 110 MISSILE-SPEED)))
                          (make-tank (+ 200 TANK-SPEED) 1)))
 
 
@@ -392,17 +392,17 @@
 ;; produce list of missiles, advancing each missile y pos by one.
 (check-expect (advance-missiles empty) empty)
 (check-expect (advance-missiles (list (make-missile 250 100) (make-missile 350 200)))
-              (list (make-missile 250 99) (make-missile 350 199)))
+              (list (make-missile 250 (- 100 MISSILE-SPEED)) (make-missile 350 (- 200 MISSILE-SPEED))))
 (check-expect (advance-missiles (list (make-missile 250 100) (make-missile 350 200) (make-missile 450 350)))
-              (list (make-missile 250 99) (make-missile 350 199) (make-missile 450 349)))
+              (list (make-missile 250 (- 100 MISSILE-SPEED)) (make-missile 350 (- 200 MISSILE-SPEED)) (make-missile 450 (- 350 MISSILE-SPEED))))
 
 ; (define (advance-missiles lom) empty) ; stub
 
 (define (advance-missiles lom)
   (cond [(empty? lom) empty]
         [else
-         (cons (make-missile (missile-x (first lom)) (- (missile-y (first lom)) 1))
-               (advance-missiles (rest  lom)))]))
+         (cons (make-missile (missile-x (first lom)) (- (missile-y (first lom)) MISSILE-SPEED))
+               (advance-missiles (rest lom)))]))
 
 ;; Tank -> Tank
 ;; Produce a Tank with incremented or decremented position x based on dir Interval[-1,1]
