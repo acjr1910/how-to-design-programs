@@ -161,46 +161,6 @@
 
 ;; Game -> Game
 ;; produce next game state
-(check-expect (advance-game G3) G3) ; gameover
-
-(check-expect (advance-game
-               (make-game
-                (list
-                 (make-invader 150 100 12)
-                 (make-invader 150 450 -10))
-                (list
-                 (make-missile 150 300)
-                 (make-missile 150 110))
-                (make-tank 50 1)))
-              (make-game
-               (list (make-invader (- 150 INVADER-X-SPEED) 451.5 -10))
-               (list (make-missile 150 (- 300 MISSILE-SPEED)))
-               (make-tank (+ 50 TANK-SPEED) 1)))
-
-(check-expect (advance-game (make-game
-                             (list
-                              (make-invader 150 100 12)
-                              (make-invader 150 450 -10))
-                             empty
-                             (make-tank 50 -1)))
-              (make-game
-               (list
-                (make-invader (+ 150 INVADER-X-SPEED) (+ 100 INVADER-Y-SPEED) 12)
-                (make-invader (- 150 INVADER-X-SPEED) 451.5 -10))
-               empty
-               (make-tank (- 50 TANK-SPEED) -1)))
-
-(check-expect (advance-game (make-game empty
-                                       (list
-                                        (make-missile 150 300)
-                                        (make-missile 150 110))
-                                       (make-tank 200 1)))
-              (make-game empty
-                         (list
-                          (make-missile 150 (- 300 MISSILE-SPEED))
-                          (make-missile 150 (- 110 MISSILE-SPEED)))
-                         (make-tank (+ 200 TANK-SPEED) 1)))
-
 
 ;(define (advance-game s) 0) ; stub
 
@@ -208,7 +168,7 @@
   (if (game-over? (game-invaders s))
       s
       (make-game
-       (advance-invaders (remove-hit-invaders (game-invaders s) (game-missiles s)))
+       (advance-invaders (create-invader (remove-hit-invaders (game-invaders s) (game-missiles s))))
        (advance-missiles (remove-hit-missiles (game-missiles s) (game-invaders s)))
        (advance-tank     (game-tank s)))))
 
@@ -222,6 +182,16 @@
    (render-invaders (game-invaders s))
    (render-missiles (game-missiles s))
    (render-tank     (game-tank     s))))
+
+;; ListOfInvader -> ListOfInvader
+;; Returns a new list of invaders with an additional invader added at INVADE-RATE intervals
+
+;(define (create-invaders loi) loi)
+
+(define (create-invader loi)
+  (cond[(> (random 108) INVADE-RATE)
+        (cons (make-invader (random WIDTH) 0 1) loi)]
+       [else loi]))
 
 ;; ListOfInvaders -> Image
 ;; produces an image of invaders
@@ -248,7 +218,7 @@
                                 (make-missile 200 250)))
               (place-image MISSILE 150 200 (place-image MISSILE 200 250 BACKGROUND)))
 
-; (define (render-missiles lom) 0); stub
+; (define (render-missiles lom) 0) ; stub
 
 (define (render-missiles missiles)
   (cond [(empty? missiles) BACKGROUND]
@@ -285,7 +255,7 @@
     [else s]))
 
 ;; ListOfMissiles Number -> ListOfMissiles
-;; !!! insert missile into a ListOfMissiles, in posn x Number
+;; insert missile into a ListOfMissiles, in posn x Number
 (check-expect (insert-missile empty 10) (list (make-missile 10 HEIGHT)))
 (check-expect (insert-missile (list (make-missile 20 30) (make-missile 40 50)) 20)
               (list (make-missile 20 30) (make-missile 40 50) (make-missile 20 HEIGHT)))
@@ -299,10 +269,10 @@
                (insert-missile (rest lom) x))]))
 
 ;; ListOfInvaders -> Boolean
-;; Produce true if any invader has landed (height is greater or equal HEIGHT);
+;; produce true if any invader has landed (height is greater or equal HEIGHT);
 (check-expect (game-over? empty) false)
-(check-expect (game-over? LOI2) false)
-(check-expect (game-over? LOI4) true)
+(check-expect (game-over? LOI2)  false)
+(check-expect (game-over? LOI4)   true)
 
 ; (define (game-over? loi) false) ; stub
 
@@ -493,11 +463,11 @@
 
 ;; Missile Invader -> Boolean
 ;; produce true if given missile hits given invader, otherwise produce false
-(check-expect (missile-hits-invader? (make-missile 100 120) (make-invader 110 125 5))  true)  ; in the hit range
-(check-expect (missile-hits-invader? (make-missile 150 220) (make-invader 150 220 10)) true)  ; same range
-(check-expect (missile-hits-invader? (make-missile 149 220) (make-invader 150 220 10)) true)  ; below hit range
-(check-expect (missile-hits-invader? (make-missile 150 180) (make-invader 185 125 5))  false) ; above hit range
-(check-expect (missile-hits-invader? (make-missile 150 300) (make-invader 150 500 -10)) false)
+(check-expect (missile-hits-invader? (make-missile 100 120) (make-invader 110 125   5))   true) ; in the hit range
+(check-expect (missile-hits-invader? (make-missile 150 220) (make-invader 150 220  10))   true) ; same range
+(check-expect (missile-hits-invader? (make-missile 149 220) (make-invader 150 220  10))   true) ; below hit range
+(check-expect (missile-hits-invader? (make-missile 150 180) (make-invader 185 125   5))  false) ; above hit range
+(check-expect (missile-hits-invader? (make-missile 150 300) (make-invader 150 500 -10))  false)
 
 (define (missile-hits-invader? missile invader)
   (and
@@ -559,5 +529,5 @@
 (define G3 (make-game (list I1 I2) (list M1 M2) T1))
 (define G4 (make-game LOI5 (list M1 M2) T1))
 
-(main G4)
+(main G0)
 
