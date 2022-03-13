@@ -228,11 +228,11 @@
 
 ;; Tank -> Image
 ;; renders tank image
-(check-expect (render-tank (make-tank 10 1)) (place-image TANK 10 HEIGHT BACKGROUND))
+(check-expect (render-tank (make-tank 10 1)) (place-image TANK 10 (- HEIGHT TANK-HEIGHT/2) BACKGROUND))
 
 ; (define (render-tank t) 0) ;stub
 
-(define (render-tank t) (place-image TANK (tank-x t) HEIGHT BACKGROUND))
+(define (render-tank t) (place-image TANK (tank-x t) (- HEIGHT TANK-HEIGHT/2) BACKGROUND))
 
 ;; Game Key -> Game
 ;; handle user arrow and space keys, where:
